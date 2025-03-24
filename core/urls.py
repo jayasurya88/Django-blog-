@@ -9,13 +9,17 @@ from .views import (
     CommentCreateView,
     like_post,
     like_comment,
-    AdvancedSearchView,
+    SimpleSearchView,
     home,
     RegisterView,
     BloggerListView,
     BloggerProfileView,
     BloggerProfileEditView,
     follow_blogger,
+    NotificationListView,
+    get_notifications,
+    mark_notification_read,
+    mark_all_notifications_read,
 )
 
 urlpatterns = [
@@ -30,9 +34,13 @@ urlpatterns = [
     path('blog/<slug:slug>/like/', like_post, name='like-post'),
     path('comment/<int:pk>/like/', like_comment, name='like-comment'),
     path('blog/<slug:slug>/comment/', CommentCreateView.as_view(), name='comment-create'),
-    path('search/', AdvancedSearchView.as_view(), name='blog-search'),
+    path('search/', SimpleSearchView.as_view(), name='blog-search'),
     path('bloggers/', BloggerListView.as_view(), name='blogger-list'),
     path('blogger/<int:pk>/', BloggerProfileView.as_view(), name='blogger-profile'),
     path('blogger/edit/', BloggerProfileEditView.as_view(), name='blogger-profile-edit'),
     path('blogger/<int:pk>/follow/', follow_blogger, name='follow-blogger'),
+    path('notifications/', NotificationListView.as_view(), name='notifications'),
+    path('notifications/get/', get_notifications, name='get-notifications'),
+    path('notifications/<int:notification_id>/read/', mark_notification_read, name='mark-notification-read'),
+    path('notifications/mark-all-read/', mark_all_notifications_read, name='mark-all-notifications-read'),
 ]

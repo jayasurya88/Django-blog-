@@ -8,15 +8,18 @@ from django.core.paginator import Paginator
 from django.utils.text import slugify
 from django.contrib.auth import login
 from django.http import JsonResponse
-from .models import BlogPost, Blogger, Comment
+from .models import BlogPost, Blogger, Comment, Notification
 from .forms import CommentForm, BlogPostForm, UserRegistrationForm, BloggerProfileForm
 from django.contrib.auth.models import User
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Case, When, Value, BooleanField
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from datetime import datetime, timedelta
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
 
 # Create your views here.
 def home(request):
@@ -349,5 +352,147 @@ class AdvancedSearchView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('q', '')
+        return context
+
+class SimpleSearchView(ListView):
+    """Simple search view that searches in post titles and content"""
+    model = BlogPost
+    template_name = 'core/search_results.html'
+    context_object_name = 'search_results'
+    paginate_by = 10
+
+    def get_queryset(self):
+        query = self.request.GET.get('q', '').strip()
+        time_filter = self.request.GET.get('time', '')
+        
+        if not query:
+            return BlogPost.objects.none()
+
+        # Apply time filter if specified
+        queryset = BlogPost.objects.all()
+        if time_filter:
+            now = timezone.now()
+            if time_filter == 'today':
+                queryset = queryset.filter(post_date__date=now.date())
+            elif time_filter == 'yesterday':
+                queryset = queryset.filter(post_date__date=(now - timedelta(days=1)).date())
+            elif time_filter == 'week':
+                queryset = queryset.filter(post_date__gte=now - timedelta(days=7))
+            elif time_filter == 'month':
+                queryset = queryset.filter(post_date__gte=now - timedelta(days=30))
+            elif time_filter == 'year':
+                queryset = queryset.filter(post_date__gte=now - timedelta(days=365))
+
+        # Split query into words and create Q objects for each word
+        search_terms = query.split()
+        q_objects = Q()
+        
+        for term in search_terms:
+            q_objects |= Q(title__icontains=term) | Q(content__icontains=term)
+        
+        # Get posts that match any of the search terms
+        queryset = queryset.filter(q_objects).distinct()
+        
+        # Order by relevance (exact matches first, then partial matches)
+        queryset = queryset.annotate(
+            relevance=Case(
+                When(title__iexact=query, then=Value(True)),
+                When(content__iexact=query, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            )
+        ).order_by('-relevance', '-post_date')
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        query = self.request.GET.get('q', '').strip()
+        time_filter = self.request.GET.get('time', '')
+        
+        context['query'] = query
+        context['time_filter'] = time_filter
+        context['total_results'] = self.get_queryset().count()
+        
+        # Get similar posts for the sidebar
+        if query:
+            similar_posts = BlogPost.objects.exclude(
+                id__in=self.get_queryset().values_list('id', flat=True)
+            ).filter(
+                Q(title__icontains=query[:3]) |  # Match first 3 characters
+                Q(content__icontains=query[:3])
+            ).order_by('-post_date')[:5]
+            context['similar_posts'] = similar_posts
+        
+        return context
+
+@login_required
+def get_notifications(request):
+    """Get unread notifications for the current user"""
+    notifications = Notification.objects.filter(
+        recipient=request.user,
+        is_read=False
+    ).order_by('-created_at')[:5]
+    
+    data = {
+        'notifications': [
+            {
+                'id': n.id,
+                'title': n.title,
+                'message': n.message,
+                'link': n.link,
+                'type': n.notification_type,
+                'created_at': n.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            for n in notifications
+        ],
+        'unread_count': Notification.objects.filter(
+            recipient=request.user,
+            is_read=False
+        ).count()
+    }
+    return JsonResponse(data)
+
+@login_required
+@require_POST
+def mark_notification_read(request, notification_id):
+    """Mark a notification as read"""
+    try:
+        notification = Notification.objects.get(
+            id=notification_id,
+            recipient=request.user
+        )
+        notification.is_read = True
+        notification.save()
+        return JsonResponse({'status': 'success'})
+    except Notification.DoesNotExist:
+        return JsonResponse({'status': 'error'}, status=404)
+
+@login_required
+@require_POST
+def mark_all_notifications_read(request):
+    """Mark all notifications as read"""
+    Notification.objects.filter(
+        recipient=request.user,
+        is_read=False
+    ).update(is_read=True)
+    return JsonResponse({'status': 'success'})
+
+class NotificationListView(LoginRequiredMixin, ListView):
+    """View for displaying all notifications"""
+    model = Notification
+    template_name = 'core/notifications.html'
+    context_object_name = 'notifications'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['unread_count'] = Notification.objects.filter(
+            recipient=self.request.user,
+            is_read=False
+        ).count()
         return context
 
