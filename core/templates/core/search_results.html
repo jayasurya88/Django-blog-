@@ -1,0 +1,251 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Search Header -->
+    <div class="row mb-5">
+        <div class="col-lg-8">
+            <h1 class="display-4 fw-bold mb-2">Search Results</h1>
+            {% if query %}
+            <p class="lead text-muted">Results for "{{ query }}"{% if time_filter %} in the last {{ time_filter }}{% endif %}</p>
+            {% endif %}
+        </div>
+        <div class="col-lg-4">
+            <form class="search-form" method="get" action="{% url 'blog-search' %}">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search posts..." value="{{ query }}">
+                    <select name="time" class="form-select" style="max-width: 120px;">
+                        <option value="">All time</option>
+                        <option value="today" {% if time_filter == 'today' %}selected{% endif %}>Today</option>
+                        <option value="yesterday" {% if time_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                        <option value="week" {% if time_filter == 'week' %}selected{% endif %}>This week</option>
+                        <option value="month" {% if time_filter == 'month' %}selected{% endif %}>This month</option>
+                        <option value="year" {% if time_filter == 'year' %}selected{% endif %}>This year</option>
+                    </select>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Search Results -->
+        <div class="col-lg-8">
+            {% if search_results %}
+            <div class="mb-4">
+                <p class="text-muted">Found {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}</p>
+            </div>
+
+            <div class="search-results">
+                {% for post in search_results %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0">
+                                {% if post.author.profile_picture %}
+                                <img src="{{ post.author.profile_picture.url }}" class="rounded-circle" width="40" height="40" alt="{{ post.author.user.username }}'s profile picture">
+                                {% else %}
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0">
+                                    <a href="{{ post.author.get_absolute_url }}" class="text-decoration-none text-dark">
+                                        {{ post.author.user.username }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    {{ post.post_date|date:"F d, Y" }}
+                                </small>
+                            </div>
+                        </div>
+                        <h2 class="h4 mb-3">
+                            <a href="{{ post.get_absolute_url }}" class="text-decoration-none text-dark">
+                                {{ post.title }}
+                            </a>
+                        </h2>
+                        <p class="text-muted mb-3">{{ post.content|truncatewords:50 }}</p>
+                        {% if post.tags %}
+                        <div class="mb-3">
+                            {% for tag in post.tags.split %}
+                            <a href="?q={{ tag }}" class="badge bg-light text-dark text-decoration-none me-1">
+                                {{ tag }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-primary me-2 like-post" data-post-id="{{ post.id }}">
+                                    <i class="fas fa-heart {% if user in post.likes.all %}text-danger{% endif %}"></i>
+                                    <span class="likes-count">{{ post.likes.count }}</span>
+                                </button>
+                                <a href="{{ post.get_absolute_url }}#comments" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-comment"></i>
+                                    <span>{{ post.comment_set.count }}</span>
+                                </a>
+                            </div>
+                            <a href="{{ post.get_absolute_url }}" class="btn btn-primary btn-sm">Read More</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if is_paginated %}
+            <nav class="mt-4" aria-label="Search results navigation">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ query }}&time={{ time_filter }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ query }}&time={{ time_filter }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ query }}&time={{ time_filter }}&page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h3>No results found</h3>
+                <p class="text-muted">Try different keywords or remove filters</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            {% if similar_posts %}
+            <!-- Similar Posts -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Similar Posts</h5>
+                    <div class="list-group list-group-flush">
+                        {% for post in similar_posts %}
+                        <a href="{{ post.get_absolute_url }}" class="list-group-item list-group-item-action border-0 px-0">
+                            <div class="d-flex align-items-center">
+                                {% if post.author.profile_picture %}
+                                <img src="{{ post.author.profile_picture.url }}" class="rounded-circle me-3" width="40" height="40" alt="{{ post.author.user.username }}'s profile picture">
+                                {% else %}
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ post.title }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        {{ post.post_date|date:"F d, Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Search Tips -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Search Tips</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-clock me-2 text-primary"></i>
+                            Use time filters like "today" or "this week"
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-tag me-2 text-primary"></i>
+                            Click on tags to find related posts
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-search me-2 text-primary"></i>
+                            Try specific keywords for better results
+                        </li>
+                        <li>
+                            <i class="fas fa-quote-right me-2 text-primary"></i>
+                            Use natural language like "Python posts from last month"
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.search-form .form-control:focus,
+.search-form .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.badge {
+    font-weight: normal;
+    padding: 0.5em 0.8em;
+}
+
+.badge:hover {
+    background-color: #e9ecef !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Like post functionality
+    $('.like-post').click(function(e) {
+        e.preventDefault();
+        var button = $(this);
+        var postId = button.data('post-id');
+        var likesCount = button.find('.likes-count');
+        var icon = button.find('i');
+        
+        $.ajax({
+            url: '/blog/' + postId + '/like/',
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                likesCount.text(response.likes_count);
+                if (response.is_liked) {
+                    icon.addClass('text-danger');
+                } else {
+                    icon.removeClass('text-danger');
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

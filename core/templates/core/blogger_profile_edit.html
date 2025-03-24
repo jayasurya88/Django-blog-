@@ -1,0 +1,179 @@
+{% extends "core/base.html" %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="h3 mb-4">Edit Profile</h1>
+                
+                <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Profile Picture -->
+                    <div class="mb-4">
+                        <label class="form-label">Profile Picture</label>
+                        <div class="d-flex align-items-center">
+                            {% if form.instance.profile_picture %}
+                            <img src="{{ form.instance.profile_picture.url }}" class="profile-picture me-3" alt="Current profile picture">
+                            {% else %}
+                            <div class="profile-picture me-3 bg-primary text-white d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user fa-4x"></i>
+                            </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                {{ form.profile_picture }}
+                                {% if form.profile_picture.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.profile_picture.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bio -->
+                    <div class="mb-4">
+                        <label class="form-label">Bio</label>
+                        {{ form.bio }}
+                        {% if form.bio.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.bio.errors }}
+                        </div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Markdown is supported. Use **bold**, *italic*, and [links](url) to format your bio.
+                        </div>
+                    </div>
+                    
+                    <!-- Social Media Links -->
+                    <div class="mb-4">
+                        <h5 class="h6 mb-3">Social Media Links</h5>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fab fa-twitter text-info me-2"></i>Twitter
+                                    </label>
+                                    {{ form.twitter }}
+                                    {% if form.twitter.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.twitter.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fab fa-facebook text-primary me-2"></i>Facebook
+                                    </label>
+                                    {{ form.facebook }}
+                                    {% if form.facebook.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.facebook.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fab fa-instagram text-danger me-2"></i>Instagram
+                                    </label>
+                                    {{ form.instagram }}
+                                    {% if form.instagram.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.instagram.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fab fa-linkedin text-primary me-2"></i>LinkedIn
+                                    </label>
+                                    {{ form.linkedin }}
+                                    {% if form.linkedin.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.linkedin.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fab fa-github me-2"></i>GitHub
+                                    </label>
+                                    {{ form.github }}
+                                    {% if form.github.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.github.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="fas fa-globe me-2"></i>Website
+                                    </label>
+                                    {{ form.website }}
+                                    {% if form.website.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.website.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'blogger-profile' user.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function() {
+    'use strict';
+    
+    var forms = document.querySelectorAll('.needs-validation');
+    
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+{% endblock %} 

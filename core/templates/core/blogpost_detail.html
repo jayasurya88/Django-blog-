@@ -1,0 +1,616 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-3 py-md-5">
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Blog Post -->
+            <article class="blog-post mb-4 mb-md-5">
+                <!-- Post Meta -->
+                <div class="post-meta mb-3 mb-md-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            {% if post.author.profile_picture %}
+                            <img src="{{ post.author.profile_picture.url }}" class="rounded-circle" width="50" height="50" alt="{{ post.author.user.username }}'s profile picture">
+                            {% else %}
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0">
+                                <a href="{{ post.author.get_absolute_url }}" class="text-decoration-none text-dark">
+                                    {{ post.author.user.username }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-alt me-1"></i>
+                                {{ post.post_date|date:"F d, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post Title -->
+                <h1 class="post-title fw-bold mb-3 mb-md-4">{{ post.title }}</h1>
+
+                <!-- Post Content -->
+                <div class="blog-content mb-4">
+                    {{ post.content|linebreaks }}
+                </div>
+
+                <!-- Post Actions -->
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 mb-md-5">
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
+                        <button class="btn btn-outline-primary me-2 like-post" data-post-id="{{ post.slug }}">
+                            <i class="fas fa-heart {% if user in post.likes.all %}text-danger{% endif %}"></i>
+                            <span class="likes-count">{{ post.likes.count }}</span>
+                        </button>
+                        <a href="#comments" class="btn btn-outline-secondary">
+                            <i class="fas fa-comment"></i>
+                            <span>{{ post.comments.count }}</span>
+                        </a>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="shareDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-share-alt me-1 me-md-2"></i><span class="d-none d-sm-inline">Share</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="shareDropdown">
+                            <li><a class="dropdown-item" href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ post.title }}" target="_blank">
+                                <i class="fab fa-twitter me-2"></i>Twitter
+                            </a></li>
+                            <li><a class="dropdown-item" href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank">
+                                <i class="fab fa-facebook me-2"></i>Facebook
+                            </a></li>
+                            <li><a class="dropdown-item" href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title={{ post.title }}" target="_blank">
+                                <i class="fab fa-linkedin me-2"></i>LinkedIn
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div id="comments" class="comments-section">
+                    <h3 class="mb-3 mb-md-4">Comments ({{ post.comments.count }})</h3>
+                    
+                    {% if user.is_authenticated %}
+                    <form id="commentForm" class="comment-form mb-4" action="/blog/{{ post.slug }}/comment/" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <textarea name="description" class="form-control" rows="3" placeholder="Write a comment..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Post Comment</button>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info">
+                        Please <a href="{% url 'login' %}" class="alert-link">login</a> to leave a comment.
+                    </div>
+                    {% endif %}
+
+                    <div class="comments-list">
+                        {% for comment in post.comments.all %}
+                        <div class="comment mb-3 mb-md-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    {% if comment.author.blogger.profile_picture %}
+                                    <img src="{{ comment.author.blogger.profile_picture.url }}" class="rounded-circle" width="40" height="40" alt="{{ comment.author.username }}'s profile picture">
+                                    {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                                        <h6 class="mb-1">
+                                            <a href="{{ comment.author.blogger.get_absolute_url }}" class="text-decoration-none text-dark">
+                                                {{ comment.author.username }}
+                                            </a>
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            {{ comment.post_date|date:"F d, Y" }}
+                                        </small>
+                                    </div>
+                                    <p class="mb-2">{{ comment.description }}</p>
+                                    <div class="d-flex align-items-center">
+                                        <button class="btn btn-sm btn-outline-primary me-2 like-comment" data-comment-id="{{ comment.id }}">
+                                            <i class="fas fa-heart {% if user in comment.likes.all %}text-danger{% endif %}"></i>
+                                            <span class="likes-count">{{ comment.likes.count }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No comments yet. Be the first to comment!</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Author Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        {% if post.author.profile_picture %}
+                        <img src="{{ post.author.profile_picture.url }}" class="rounded-circle me-3" width="50" height="50" alt="{{ post.author.user.username }}'s profile picture">
+                        {% else %}
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h5 class="card-title mb-0">
+                                <a href="{{ post.author.get_absolute_url }}" class="text-decoration-none text-dark">
+                                    {{ post.author.user.username }}
+                                </a>
+                            </h5>
+                            <p class="text-muted small mb-0">{{ post.author.bio|default:"No bio yet" }}</p>
+                        </div>
+                    </div>
+                    {% if user.is_authenticated and user != post.author.user %}
+                    <button class="btn btn-primary follow-btn w-100" data-blogger-id="{{ post.author.id }}">
+                        <i class="fas fa-user-plus me-2"></i>
+                        <span class="follow-text">{% if user in post.author.followers.all %}Unfollow{% else %}Follow{% endif %}</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Mobile Post Actions for smaller screens -->
+            <div class="d-lg-none card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Post Actions</h5>
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-primary me-2 like-post-mobile" data-post-id="{{ post.slug }}">
+                            <i class="fas fa-heart {% if user in post.likes.all %}text-danger{% endif %}"></i>
+                            <span class="likes-count">{{ post.likes.count }}</span> Likes
+                        </button>
+                        <a href="#comments" class="btn btn-outline-secondary">
+                            <i class="fas fa-comment me-1"></i>
+                            <span>{{ post.comments.count }}</span> Comments
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar Posts -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3 mb-md-4">Similar Posts</h5>
+                    <div class="list-group list-group-flush">
+                        {% for similar_post in similar_posts %}
+                        <a href="{{ similar_post.get_absolute_url }}" class="list-group-item list-group-item-action border-0 px-0 py-2 py-md-3">
+                            <div class="d-flex align-items-center">
+                                {% if similar_post.author.profile_picture %}
+                                <img src="{{ similar_post.author.profile_picture.url }}" class="rounded-circle me-3 d-none d-sm-block" width="40" height="40" alt="{{ similar_post.author.user.username }}'s profile picture">
+                                {% else %}
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3 d-none d-sm-flex" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0 text-truncate">{{ similar_post.title }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        {{ similar_post.post_date|date:"F d, Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <p class="text-muted">No similar posts found.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Popular Posts -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3 mb-md-4">Popular Posts</h5>
+                    <div class="list-group list-group-flush">
+                        {% for popular_post in popular_posts %}
+                        <a href="{{ popular_post.get_absolute_url }}" class="list-group-item list-group-item-action border-0 px-0 py-2 py-md-3">
+                            <div class="d-flex align-items-center">
+                                {% if popular_post.author.profile_picture %}
+                                <img src="{{ popular_post.author.profile_picture.url }}" class="rounded-circle me-3 d-none d-sm-block" width="40" height="40" alt="{{ popular_post.author.user.username }}'s profile picture">
+                                {% else %}
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3 d-none d-sm-flex" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 text-truncate">{{ popular_post.title }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-heart me-1"></i>
+                                        {{ popular_post.likes.count }} likes
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <p class="text-muted">No popular posts found.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Responsive styles */
+.post-title {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    line-height: 1.2;
+    color: #212529;
+}
+
+.blog-content {
+    font-size: clamp(1rem, 2vw, 1.1rem);
+    line-height: 1.8;
+    color: #495057;
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+.list-group-item {
+    transition: background-color 0.2s ease;
+}
+
+.list-group-item:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Profile images */
+.rounded-circle {
+    object-fit: cover;
+}
+
+/* Button styling */
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Comment list styling */
+.comment {
+    transition: background-color 0.2s ease;
+    padding: 1rem;
+    border-radius: 0.375rem;
+}
+
+.comment:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Responsive adjustments */
+@media (max-width: 575.98px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .comment {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .blog-content {
+        font-size: 1rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .blog-post {
+        padding-right: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Setup AJAX CSRF token handling
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Set CSRF token for all AJAX requests
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
+
+$(document).ready(function() {
+    console.log("Document ready, initializing like and comment functions");
+    
+    // Handle both like buttons (main and mobile)
+    $('.like-post, .like-post-mobile').click(function(e) {
+        e.preventDefault();
+        console.log("Like post button clicked");
+        
+        var button = $(this);
+        var postSlug = button.data('post-id');
+        var likesCount = button.find('.likes-count');
+        var icon = button.find('i');
+        
+        console.log("Post slug:", postSlug);
+        console.log("Current likes:", likesCount.text());
+        
+        $.ajax({
+            url: '/blog/' + postSlug + '/like/',
+            type: 'POST',
+            success: function(response) {
+                console.log("Like post success:", response);
+                // Update both like buttons
+                $('.like-post .likes-count, .like-post-mobile .likes-count').text(response.likes_count);
+                if (response.is_liked) {
+                    $('.like-post i, .like-post-mobile i').addClass('text-danger');
+                } else {
+                    $('.like-post i, .like-post-mobile i').removeClass('text-danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error liking post:', error);
+                console.error('Status:', status);
+                console.error('Response:', xhr.responseText);
+                
+                var errorMessage = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">Failed to like post. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+                $('.post-title').before(errorMessage);
+                setTimeout(function() {
+                    errorMessage.alert('close');
+                }, 3000);
+            }
+        });
+    });
+
+    // Like comment functionality
+    $(document).on('click', '.like-comment', function(e) {
+        e.preventDefault();
+        console.log("Like comment button clicked");
+        
+        var button = $(this);
+        var commentId = button.data('comment-id');
+        var likesCount = button.find('.likes-count');
+        var icon = button.find('i');
+        
+        console.log("Comment ID:", commentId);
+        console.log("Current likes:", likesCount.text());
+        
+        $.ajax({
+            url: '/comment/' + commentId + '/like/',
+            type: 'POST',
+            success: function(response) {
+                console.log("Like comment success:", response);
+                likesCount.text(response.likes_count);
+                if (response.is_liked) {
+                    icon.addClass('text-danger');
+                } else {
+                    icon.removeClass('text-danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error liking comment:', error);
+                console.error('Status:', status);
+                console.error('Response:', xhr.responseText);
+                
+                var errorMessage = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">Failed to like comment. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+                button.closest('.comment').prepend(errorMessage);
+                setTimeout(function() {
+                    errorMessage.alert('close');
+                }, 3000);
+            }
+        });
+    });
+
+    // Comment form submission
+    $('#commentForm').on('submit', function(e) {
+        e.preventDefault();
+        console.log("Comment form submitted");
+        
+        var form = $(this);
+        var submitButton = form.find('button[type="submit"]');
+        var textarea = form.find('textarea[name="description"]');
+        var commentText = textarea.val();
+        
+        console.log("Comment text:", commentText);
+        console.log("Form action:", form.attr('action'));
+        console.log("Form method:", form.attr('method'));
+        console.log("CSRF token:", form.find('input[name="csrfmiddlewaretoken"]').val());
+        
+        if (!commentText.trim()) {
+            console.error("Comment text is empty");
+            var errorMessage = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">Please enter a comment.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+            form.before(errorMessage);
+            setTimeout(function() {
+                errorMessage.alert('close');
+            }, 3000);
+            return;
+        }
+        
+        // Disable the submit button and show loading state
+        submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Posting...');
+        
+        // Create FormData object from the form
+        var formData = new FormData(form[0]);
+        
+        $.ajax({
+            url: '/blog/{{ post.slug }}/comment/',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                console.log('Success response:', response);
+                
+                // Debug output to see exact response structure
+                console.log('Response fields:', Object.keys(response));
+                console.log('Author fields:', response.author ? Object.keys(response.author) : 'No author');
+                
+                if (response && response.author) {
+                    // Create the new comment HTML
+                    var newComment = `
+                        <div class="comment mb-3 mb-md-4">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    ${response.author.profile_picture ? 
+                                        `<img src="${response.author.profile_picture}" class="rounded-circle" width="40" height="40" alt="${response.author.username}'s profile picture">` :
+                                        `<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user"></i>
+                                        </div>`
+                                    }
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                                        <h6 class="mb-1">
+                                            <a href="/blogger/${response.author.id}/" class="text-decoration-none text-dark">
+                                                ${response.author.username}
+                                            </a>
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar-alt me-1"></i>
+                                            ${response.post_date}
+                                        </small>
+                                    </div>
+                                    <p class="mb-2">${response.description}</p>
+                                    <div class="d-flex align-items-center">
+                                        <button class="btn btn-sm btn-outline-primary me-2 like-comment" data-comment-id="${response.id}">
+                                            <i class="fas fa-heart"></i>
+                                            <span class="likes-count">0</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log('Generated HTML:', newComment);
+                    
+                    // Add the new comment to the top of the comments list
+                    if ($('.comments-list .comment').length > 0) {
+                        // If there are already comments, prepend the new one
+                        $('.comments-list').prepend(newComment);
+                        console.log('Prepended comment to existing comments');
+                    } else {
+                        // If there are no comments, replace the "No comments" message
+                        $('.comments-list').empty();
+                        $('.comments-list').append(newComment);
+                        console.log('Replaced "No comments" with new comment');
+                    }
+                    
+                    // Clear the textarea
+                    textarea.val('');
+                    
+                    // Update comment count
+                    var commentCount = $('.comments-section h3');
+                    var currentCount = parseInt(commentCount.text().match(/\d+/)[0]);
+                    commentCount.text(`Comments (${currentCount + 1})`);
+                    console.log('Updated comment count from', currentCount, 'to', currentCount + 1);
+                    
+                    // Show success message
+                    var successMessage = $('<div class="alert alert-success alert-dismissible fade show" role="alert">Comment posted successfully!<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+                    form.before(successMessage);
+                    setTimeout(function() {
+                        successMessage.alert('close');
+                    }, 3000);
+                } else {
+                    console.error('Invalid response format:', response);
+                    var errorMessage = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">Invalid response from server. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+                    form.before(errorMessage);
+                    setTimeout(function() {
+                        errorMessage.alert('close');
+                    }, 3000);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error details:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText,
+                    statusCode: xhr.status,
+                    statusText: xhr.statusText
+                });
+                
+                // Try to parse the response if it's JSON
+                try {
+                    const responseObj = JSON.parse(xhr.responseText);
+                    console.error('Parsed error response:', responseObj);
+                } catch (e) {
+                    console.error('Could not parse error response as JSON');
+                }
+                
+                var errorMessage = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">Failed to post comment. Please try again.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>');
+                form.before(errorMessage);
+                setTimeout(function() {
+                    errorMessage.alert('close');
+                }, 3000);
+            },
+            complete: function() {
+                // Re-enable the submit button and restore its original text
+                submitButton.prop('disabled', false).html('Post Comment');
+            }
+        });
+    });
+    
+    // Add smooth scrolling for anchor links
+    $('a[href^="#"]').on('click', function(e) {
+        e.preventDefault();
+        
+        const target = $(this.getAttribute('href'));
+        
+        if (target.length) {
+            $('html, body').animate({
+                scrollTop: target.offset().top - 70 // Adjust for fixed navbar if needed
+            }, 500);
+        }
+    });
+});
+</script>
+{% endblock %} 

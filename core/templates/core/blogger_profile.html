@@ -1,0 +1,225 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ blogger.user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Profile Header -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                {% if blogger.blogger.profile_picture %}
+                <img src="{{ blogger.blogger.profile_picture.url }}" class="profile-picture mb-4" alt="{{ blogger.username }}'s profile picture">
+                {% else %}
+                <div class="profile-picture mx-auto mb-4 bg-primary text-white d-flex align-items-center justify-content-center">
+                    <i class="fas fa-user fa-4x"></i>
+                </div>
+                {% endif %}
+                
+                <h1 class="h3 mb-3">{{ blogger.user.username }}</h1>
+                
+                {% if user.is_authenticated and user != blogger %}
+                <button class="btn {% if is_following %}btn-outline-primary{% else %}btn-primary{% endif %} mb-4 follow-btn" 
+                        data-blogger-id="{{ blogger.id }}">
+                    <i class="fas fa-{% if is_following %}user-minus{% else %}user-plus{% endif %} me-2"></i>
+                    <span>{% if is_following %}Unfollow{% else %}Follow{% endif %}</span>
+                </button>
+                {% endif %}
+                
+                {% if user == blogger.user %}
+                <a href="{% url 'blogger-profile-edit' %}" class="btn btn-outline-primary mb-4">
+                    <i class="fas fa-edit me-2"></i>Edit Profile
+                </a>
+                {% endif %}
+                
+                <!-- Stats -->
+                <div class="row g-3 mb-4">
+                    <div class="col-4">
+                        <div class="stats-card">
+                            <div class="stats-number">{{ total_posts }}</div>
+                            <div class="stats-label">Posts</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stats-card">
+                            <div class="stats-number">{{ followers_count }}</div>
+                            <div class="stats-label">Followers</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stats-card">
+                            <div class="stats-number">{{ following_count }}</div>
+                            <div class="stats-label">Following</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bio -->
+                {% if blogger.bio %}
+                <div class="bio-section mb-4">
+                    <h5 class="h6 text-muted mb-2">About</h5>
+                    <div class="bio-content">
+                        {{ blogger.get_bio_as_markdown|safe }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Social Links -->
+                {% if blogger.twitter or blogger.facebook or blogger.instagram or blogger.linkedin or blogger.github or blogger.website %}
+                <div class="social-links">
+                    <h5 class="h6 text-muted mb-3">Connect</h5>
+                    <div class="d-flex justify-content-center gap-3">
+                        {% if blogger.twitter %}
+                        <a href="{{ blogger.twitter }}" class="text-muted" target="_blank">
+                            <i class="fab fa-twitter fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if blogger.facebook %}
+                        <a href="{{ blogger.facebook }}" class="text-muted" target="_blank">
+                            <i class="fab fa-facebook fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if blogger.instagram %}
+                        <a href="{{ blogger.instagram }}" class="text-muted" target="_blank">
+                            <i class="fab fa-instagram fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if blogger.linkedin %}
+                        <a href="{{ blogger.linkedin }}" class="text-muted" target="_blank">
+                            <i class="fab fa-linkedin fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if blogger.github %}
+                        <a href="{{ blogger.github }}" class="text-muted" target="_blank">
+                            <i class="fab fa-github fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if blogger.website %}
+                        <a href="{{ blogger.website }}" class="text-muted" target="_blank">
+                            <i class="fas fa-globe fa-lg"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Blog Posts -->
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h4 mb-0">Blog Posts</h2>
+            {% if user == blogger.user %}
+            <a href="{% url 'blog-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i>New Post
+            </a>
+            {% endif %}
+        </div>
+        
+        {% for post in blogger.blogpost_set.all %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h3 class="card-title h5">
+                    <a href="{{ post.get_absolute_url }}" class="text-decoration-none text-dark">
+                        {{ post.title }}
+                    </a>
+                </h3>
+                <p class="card-text text-muted">
+                    <small>
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        {{ post.post_date|date:"F d, Y" }}
+                    </small>
+                </p>
+                <p class="card-text">{{ post.content|truncatewords:50 }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-primary me-2 like-post" data-post-id="{{ post.id }}">
+                            <i class="fas fa-heart {% if post.likes.filter.id == user.id %}text-danger{% endif %}"></i>
+                            <span class="likes-count">{{ post.get_likes_count }}</span>
+                        </button>
+                        <a href="{{ post.get_absolute_url }}#comments" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-comment"></i>
+                            <span>{{ post.comment_set.count }}</span>
+                        </a>
+                    </div>
+                    <a href="{{ post.get_absolute_url }}" class="btn btn-sm btn-primary">
+                        Read More
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+            <h3>No blog posts yet</h3>
+            <p class="text-muted">{% if user == blogger.user %}Start writing your first blog post!{% else %}This blogger hasn't written any posts yet.{% endif %}</p>
+            {% if user == blogger.user %}
+            <a href="{% url 'blog-create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i>Create New Post
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Follow/Unfollow functionality
+    $('.follow-btn').click(function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var bloggerId = $btn.data('blogger-id');
+        
+        $.ajax({
+            url: `/blogger/${bloggerId}/follow/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.is_following) {
+                    $btn.removeClass('btn-outline-primary').addClass('btn-primary');
+                    $btn.find('i').removeClass('fa-user-plus').addClass('fa-user-minus');
+                    $btn.find('span').text('Unfollow');
+                } else {
+                    $btn.removeClass('btn-primary').addClass('btn-outline-primary');
+                    $btn.find('i').removeClass('fa-user-minus').addClass('fa-user-plus');
+                    $btn.find('span').text('Follow');
+                }
+                
+                // Update followers count
+                $('.stats-number').eq(1).text(response.followers_count);
+            }
+        });
+    });
+    
+    // Like post functionality
+    $('.like-post').click(function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var postId = $btn.data('post-id');
+        
+        $.ajax({
+            url: `/blog/${postId}/like/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                $btn.find('.likes-count').text(response.likes_count);
+                if (response.is_liked) {
+                    $btn.find('i').addClass('text-danger');
+                } else {
+                    $btn.find('i').removeClass('text-danger');
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

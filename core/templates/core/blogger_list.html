@@ -1,0 +1,122 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Our Bloggers{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 mb-3">Our Bloggers</h1>
+        <p class="lead text-muted">Meet our amazing community of writers and content creators.</p>
+        
+        <!-- Stats -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-3">
+                <div class="stats-card mb-4">
+                    <div class="stats-number">{{ total_bloggers }}</div>
+                    <div class="stats-label">Active Bloggers</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card mb-4">
+                    <div class="stats-number">{{ total_posts }}</div>
+                    <div class="stats-label">Total Posts</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloggers Grid -->
+    <div class="row g-4">
+        {% for blogger in bloggers %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <!-- Profile Picture -->
+                    <div class="mb-3">
+                        {% if blogger.profile_picture %}
+                        <img src="{{ blogger.profile_picture.url }}" class="rounded-circle" width="100" height="100" alt="{{ blogger.user.username }}'s profile picture">
+                        {% else %}
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Blogger Info -->
+                    <h3 class="h5 mb-2">
+                        <a href="{% url 'blogger-profile' blogger.user.id %}" class="text-decoration-none text-dark">
+                            {{ blogger.user.username }}
+                        </a>
+                    </h3>
+                    <p class="text-muted mb-3">
+                        {% if blogger.bio %}
+                        {{ blogger.bio|truncatechars:100 }}
+                        {% else %}
+                        No bio available
+                        {% endif %}
+                    </p>
+                    
+                    <!-- Stats -->
+                    <div class="d-flex justify-content-center gap-4 mb-3">
+                        <div class="text-center">
+                            <div class="h4 mb-0">{{ blogger.post_count }}</div>
+                            <small class="text-muted">Posts</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="h4 mb-0">{{ blogger.follower_count }}</div>
+                            <small class="text-muted">Followers</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Button -->
+                    <a href="{% url 'blogger-profile' blogger.user.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-user me-2"></i>View Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h3>No Bloggers Yet</h3>
+            <p class="text-muted">Be the first one to join our community!</p>
+            <a href="{% url 'register' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Join Now
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-5" aria-label="Blogger navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %} 
